@@ -16,6 +16,7 @@ app.use(express.static(path.join(__dirname, '..', 'frontend')));
 
 let connected = false;
 let sessionStart = null;
+let selectedPlan = 'free';
 const metrics = {
   download: 0,
   upload: 0,
@@ -24,6 +25,15 @@ const metrics = {
   serverLoad: 34,
   uptime: 99.97,
 };
+
+function getActivePlan() {
+  const plan = getPricingPlans().find(item => item.id === selectedPlan) || getPricingPlans()[0];
+  return {
+    name: plan.title,
+    badge: plan.title.toUpperCase(),
+    popular: !!plan.popular,
+  };
+}
 
 function formatSessionTime() {
   if (!sessionStart) return '00:00:00';
@@ -52,6 +62,7 @@ function refreshMetrics() {
 setInterval(refreshMetrics, 1200);
 
 app.get('/api/status', (req, res) => {
+  const plan = getActivePlan();
   res.json({
     connected,
     server: {
@@ -63,8 +74,8 @@ app.get('/api/status', (req, res) => {
       premium: true,
     },
     plan: {
-      name: 'FREE',
-      badge: 'FREE',
+      name: plan.name,
+      badge: plan.badge,
     },
     metrics: {
       ping: connected ? `${metrics.ping}ms` : '—',
@@ -157,9 +168,15 @@ app.get('/api/billing/plans', (req, res) => {
 app.post('/api/billing/checkout', async (req, res) => {
   try {
     const { planId } = req.body;
+    const plan = getPricingPlans().find(item => item.id === planId);
+    if (!plan) {
+      return res.status(404).json({ error: 'Pricing plan not found' });
+    }
+
+    selectedPlan = planId;
     const origin = req.headers.origin || `http://localhost:${PORT}`;
     const session = await createCheckoutSession(planId, origin);
-    res.json(session);
+    res.json({ ...session, planId });
   } catch (error) {
     res.status(500).json({ error: error.message || 'Could not create checkout session' });
   }

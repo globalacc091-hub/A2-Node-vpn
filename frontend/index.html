@@ -907,7 +907,7 @@
       <div class="user-avatar">U</div>
       <div class="user-info">
         <div class="user-name">user@a2node</div>
-        <div class="plan-badge">FREE</div>
+        <div class="plan-badge" id="user-plan-badge">FREE</div>
       </div>
     </div>
   </nav>
@@ -984,9 +984,9 @@
 
       <div class="topbar-right">
         <div class="plan-display">
-          <span class="plan-name">FREE PLAN</span>
+          <span class="plan-name" id="top-plan-name">FREE PLAN</span>
         </div>
-        <button class="upgrade-btn" id="upgrade-btn" aria-label="Upgrade to PRO">Upgrade → PRO</button>
+        <button class="upgrade-btn" id="upgrade-btn" aria-label="Upgrade plan">Upgrade → PRO</button>
       </div>
     </header>
 
@@ -1131,7 +1131,7 @@
     <div class="modal-sub">Unlock the full power of A2 Node — faster servers, unlimited bandwidth, team features.</div>
     <div class="pricing-grid">
 
-      <div class="pricing-card">
+      <div class="pricing-card" data-plan-id="free">
         <div class="pricing-tier">FREE</div>
         <div class="pricing-price">$0 <span>/mo</span></div>
         <ul class="pricing-features">
@@ -1140,10 +1140,10 @@
           <li>WireGuard protocol</li>
           <li>Basic support</li>
         </ul>
-        <button class="pricing-cta">Current Plan</button>
+        <button class="pricing-cta" data-plan-id="free">Current Plan</button>
       </div>
 
-      <div class="pricing-card popular">
+      <div class="pricing-card popular" data-plan-id="pro">
         <div class="popular-badge">MOST POPULAR</div>
         <div class="pricing-tier">PRO</div>
         <div class="pricing-price">$4.99 <span>/mo</span></div>
@@ -1154,10 +1154,10 @@
           <li>Kill switch + IP leak guard</li>
           <li>Priority support 24/7</li>
         </ul>
-        <button class="pricing-cta">Start Free Trial</button>
+        <button class="pricing-cta" data-plan-id="pro">Start Free Trial</button>
       </div>
 
-      <div class="pricing-card">
+      <div class="pricing-card" data-plan-id="team">
         <div class="pricing-tier">TEAM</div>
         <div class="pricing-price">$12 <span>/mo</span></div>
         <ul class="pricing-features">
@@ -1167,7 +1167,7 @@
           <li>Admin dashboard</li>
           <li>SLA guarantee</li>
         </ul>
-        <button class="pricing-cta">Contact Sales</button>
+        <button class="pricing-cta" data-plan-id="team">Contact Sales</button>
       </div>
 
     </div>
@@ -1219,6 +1219,11 @@
   const topPing = document.getElementById('top-ping');
   const serverPing = document.getElementById('server-ping');
   const bgMap = document.getElementById('bg-map');
+  const topPlanName = document.getElementById('top-plan-name');
+  const userPlanBadge = document.getElementById('user-plan-badge');
+
+  let selectedPlan = 'FREE';
+  let pricingPlans = [];
 
   async function requestApi(path, options = {}) {
     try {
@@ -1230,9 +1235,56 @@
     }
   }
 
+  async function loadBillingPlans() {
+    const plans = await requestApi('/api/billing/plans');
+    pricingPlans = Array.isArray(plans) ? plans : [];
+    updatePlanDisplay();
+    document.querySelectorAll('.pricing-cta').forEach(button => {
+      button.addEventListener('click', async () => {
+        const planId = button.dataset.planId;
+        if (!planId || selectedPlan.toLowerCase() === planId) return;
+        const response = await requestApi('/api/billing/checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ planId }),
+        });
+        if (response?.url) {
+          selectedPlan = planId.toUpperCase();
+          updatePlanDisplay();
+          window.open(response.url, '_blank');
+        }
+      });
+    });
+  }
+
+  function updatePlanDisplay() {
+    topPlanName.textContent = `${selectedPlan} PLAN`;
+    userPlanBadge.textContent = selectedPlan;
+    document.querySelectorAll('.pricing-card').forEach(card => {
+      const planId = card.dataset.planId;
+      const button = card.querySelector('.pricing-cta');
+      if (!planId || !button) return;
+      if (planId === selectedPlan.toLowerCase()) {
+        button.textContent = 'Current Plan';
+        button.disabled = true;
+        button.style.opacity = '0.6';
+        button.style.cursor = 'default';
+      } else {
+        button.textContent = 'Upgrade';
+        button.disabled = false;
+        button.style.opacity = '1';
+        button.style.cursor = 'pointer';
+      }
+    });
+  }
+
   async function refreshBackendStatus() {
     const status = await requestApi('/api/status');
     if (!status) return;
+
+    const remotePlan = status.plan?.name || 'FREE';
+    selectedPlan = remotePlan.toUpperCase();
+    updatePlanDisplay();
 
     if (status.connected && state !== 'connected') {
       setConnected();
@@ -1258,7 +1310,6 @@
     btnLabel.textContent = 'CONNECTING';
     btnSublabel.textContent = 'SECURING TUNNEL...';
     connectBtn.setAttribute('aria-pressed', 'false');
-    setTimeout(setConnected, 2200);
   }
 
   function setConnected() {
@@ -1351,10 +1402,20 @@
   connectBtn.addEventListener('click', async () => {
     if (state === 'disconnected') {
       setConnecting();
-      await requestApi('/api/connect', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+      const result = await requestApi('/api/connect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      setTimeout(() => {
+        if (result?.connected) setConnected();
+        else setDisconnected();
+      }, 1200);
     } else if (state === 'connected') {
       setDisconnected();
-      await requestApi('/api/disconnect', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+      await requestApi('/api/disconnect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
   });
 
@@ -1442,6 +1503,7 @@
   });
 
   refreshBackendStatus();
+  loadBillingPlans();
   setInterval(refreshBackendStatus, 3000);
 </script>
 </body>
