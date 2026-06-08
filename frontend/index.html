@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>A2 Node — Secure. Fast. Invisible.</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=IBM+Plex+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -216,6 +216,8 @@
   /* TOP BAR */
   .topbar {
     display: flex;
+    font-family: 'Inter', sans-serif;
+font-weight: 500;
     align-items: center;
     justify-content: space-between;
     padding: 16px 32px;
@@ -320,14 +322,7 @@
     justify-content: center;
   }
 
-  /* Outer ring */
-  .ring-outer {
-    position: absolute;
-    inset: 0;
-    border-radius: 50%;
-    border: 1px dashed rgba(239,68,68,0.4);
-    animation: ring-rotate 20s linear infinite;
-  }
+  
   .ring-outer.connected { border-color: rgba(59,130,246,0.5); }
 
   .ring-mid {
