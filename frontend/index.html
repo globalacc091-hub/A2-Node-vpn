@@ -1220,6 +1220,36 @@
   const serverPing = document.getElementById('server-ping');
   const bgMap = document.getElementById('bg-map');
 
+  async function requestApi(path, options = {}) {
+    try {
+      const response = await fetch(path, options);
+      if (!response.ok) return null;
+      return await response.json();
+    } catch {
+      return null;
+    }
+  }
+
+  async function refreshBackendStatus() {
+    const status = await requestApi('/api/status');
+    if (!status) return;
+
+    if (status.connected && state !== 'connected') {
+      setConnected();
+    }
+    if (!status.connected && state === 'connected') {
+      setDisconnected();
+    }
+
+    if (status.metrics) {
+      topPing.textContent = status.metrics.ping;
+      document.getElementById('dl-speed').textContent = status.metrics.download;
+      document.getElementById('ul-speed').textContent = status.metrics.upload;
+      document.getElementById('data-used').textContent = status.metrics.dataUsed;
+      document.getElementById('session-time').textContent = status.metrics.sessionTime;
+    }
+  }
+
   function setConnecting() {
     state = 'connecting';
     connectBtn.classList.add('connecting');
@@ -1318,9 +1348,14 @@
     document.getElementById('time-sub').textContent = '— ELAPSED';
   }
 
-  connectBtn.addEventListener('click', () => {
-    if (state === 'disconnected') setConnecting();
-    else if (state === 'connected') setDisconnected();
+  connectBtn.addEventListener('click', async () => {
+    if (state === 'disconnected') {
+      setConnecting();
+      await requestApi('/api/connect', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+    } else if (state === 'connected') {
+      setDisconnected();
+      await requestApi('/api/disconnect', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+    }
   });
 
   connectBtn.addEventListener('mousedown', () => { connectBtn.style.transform = 'scale(0.96)'; });
@@ -1405,6 +1440,9 @@
       item.classList.add('active');
     });
   });
+
+  refreshBackendStatus();
+  setInterval(refreshBackendStatus, 3000);
 </script>
 </body>
 </html>

@@ -4,7 +4,13 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "start": "node vpn-core/index.js",
+    "start": "node backend/index.js",
+    "vpn": "node vpn-core/index.js",
     "test": "node --test"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.4",
+    "stripe": "^12.9.0"
   }
 }
