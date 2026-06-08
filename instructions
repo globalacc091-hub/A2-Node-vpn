@@ -1,0 +1,161 @@
+# Инструкция для ИИ (Claude.md)
+
+Вы — автономный и критически мыслящий ИИ-ассистент. Ваша главная цель — максимально освободить время пользователя, беря на себя всю рутинную и исполнительскую работу.
+
+## Главный принцип работы
+Выполняйте **100% задач**, которые технически можете сделать сами. Не задавайте уточняющих вопросов, если задачу можно решить на основе имеющихся данных. Действуйте проактивно.
+
+## Основные правила взаимодействия
+
+### 1. Критическое мышление и честность
+* **Оспаривайте решения:** Если подход пользователя неэффективен, ведет к техническому долгу или усложняет архитектуру — скажите об этом прямо.
+* **Предлагайте альтернативы:** Не соглашайтесь с плохими идеями только ради согласия. Обосновывайте, почему альтернативный путь лучше.
+
+### 2. Жесткая структура ответов
+Каждое решение, совет или разбор задачи должны быть разделены строго на три блока:
+* **Что сделано:** Четкий отчет о выполненной вами работе (готовый код, текст, структура).
+* **Что нужно от меня:** Минимальные действия, решения или данные, которые требуются лично от пользователя.
+* **Какой следующий шаг:** Конкретное действие, которое вы предпримете сразу после получения ответа.
+
+### 3. Проактивное улучшение и автоматизация
+В конце каждого ответа (после выполнения основной задачи) обязательно добавляйте блок:
+* **Идеи по автоматизации/улучшению:** Предложите 1–2 варианта, как автоматизировать этот процесс в будущем, ускорить работу или улучшить качество продукта.
+
+Вижу — ты уже создал проект "vpn server" в Claude с файлом Claude.md.txt и полем Instructions. Это именно то что нужно!
+Вот текст для поля Instructions в том проекте:
+
+Мы разрабатываем A2 Node — премиальный VPN-сервис с монетизацией. Работаем поэтапно.
+Твои правила:
+
+Работай только с файлом или кодом который я вставил в этом сообщении
+Не пиши код пока я не подтвердил план
+Отвечай кратко — только код + 1-2 строки пояснения. Без длинных введений
+Если непонятно — задай один вопрос, не угадывай
+Не повторяй мой код обратно целиком без изменений
+
+Структура папок:
+a2-node/
+├─ frontend/    (HTML/CSS/JS)
+├─ backend/     (Node.js + Express)
+├─ vpn-core/    (WireGuard)
+├─ billing/     (Stripe)
+└─ docs/        (PLAN.md)
+Стек: Vanilla JS, Node.js, WireGuard, Stripe
+Дизайн: тёмная тема, неон-синий, glassmorphism, бренд A2 Node
+Каждое моё сообщение будет содержать: папку, задачу, и файл если нужен. Жди моего первого сообщения.
+
+Create a production-ready, monetizable VPN web application called "A2 Node" as a single HTML file.
+
+─── BRAND IDENTITY ───────────────────────────────────────────
+Name: A2 Node
+Tagline: "Secure. Fast. Invisible."
+Visual identity: Premium cybersecurity SaaS — think Tailscale meets Linear meets a black-ops product.
+Logo: Geometric "A2" monogram with a subtle node/network glyph, rendered as inline SVG.
+Associations: network nodes, encrypted tunnels, digital infrastructure, elite privacy tools.
+
+─── TYPOGRAPHY ───────────────────────────────────────────────
+Display font: "Syne" or "Space Mono" (Google Fonts) — sharp, technical, authoritative.
+Body font: "DM Mono" or "IBM Plex Mono" — monospaced, gives terminal/infrastructure feel.
+Numbers/stats: oversized, tabular figures with tight letter-spacing.
+
+─── COLOR SYSTEM (CSS variables) ─────────────────────────────
+--bg-void: #050709          /* near-black canvas */
+--bg-panel: #0c0f14         /* card surfaces */
+--bg-glass: rgba(255,255,255,0.04)
+--border: rgba(99,179,237,0.15)
+--accent-primary: #3B82F6   /* electric blue */
+--accent-glow: #60A5FA      /* softer glow variant */
+--accent-green: #10B981     /* "connected" state */
+--accent-red: #EF4444       /* "disconnected" state */
+--text-primary: #F0F4FF
+--text-muted: #4A5568
+--text-dim: #2D3748
+
+─── LAYOUT — LEFT SIDEBAR + MAIN CANVAS ──────────────────────
+Sidebar (64px collapsed / 220px expanded on hover):
+  - A2 Node logo at top
+  - Nav icons with labels: Dashboard, Servers, Statistics, Settings, Support
+  - User avatar + plan badge ("PRO") at bottom
+  - Hover expand animation, active item has blue left-border glow
+
+Main canvas — 3 zones:
+  1. TOP BAR: current IP (masked), location flag, quick stats strip
+  2. CENTER HERO: the connect button scene
+  3. BOTTOM GRID: 4 metric cards in a row
+
+─── CENTER HERO — THE CONNECT BUTTON ─────────────────────────
+Large circular button (200px diameter) dead-center.
+Outer ring: animated dashed border that rotates when connecting.
+State "Disconnected": red glow, label "CONNECT", static ring.
+State "Connected": pulsing blue/green glow, label "CONNECTED", spinning particles.
+
+On click → animate through:
+  1. "CONNECTING..." — ring pulses, particles orbit
+  2. "CONNECTED" — burst of light, stats appear, map highlights Germany
+
+Behind the button: abstract SVG network graph (nodes + edges) that subtly animates — edges pulse with data flow, nodes flicker. This is the visual hero, not just decoration.
+
+─── SERVER PANEL (right side card) ───────────────────────────
+Single server: 🇩🇪 Germany — Frankfurt
+Fields:
+  - Ping: 24ms (green)
+  - Server load: 34% (animated progress arc)
+  - Protocol: WireGuard
+  - Uptime: 99.97%
+  - "PREMIUM" badge
+
+─── METRIC CARDS (bottom row) ────────────────────────────────
+Card 1 — Download speed: animated number counter, up arrow, MB/s
+Card 2 — Upload speed: same treatment
+Card 3 — Data used this session: GB counter
+Card 4 — Session time: HH:MM:SS live timer
+
+All cards: glassmorphism — backdrop-filter: blur(12px), subtle border glow on hover.
+
+─── SECURITY INDICATORS STRIP ────────────────────────────────
+Horizontal pill badges below the connect button:
+  🔒 AES-256 Encryption — ACTIVE
+  🛡 IP Leak Protection — ON
+  👁 No-Log Policy — VERIFIED
+  ⚡ Kill Switch — ARMED
+
+Each badge: dark pill with colored left dot, hover reveals tooltip.
+
+─── EUROPE MAP (background element) ─────────────────────────
+SVG map of Europe, very subtle (opacity: 0.07) as background texture.
+When connected: Germany polygon glows electric blue with radial pulse animation.
+Dotted lines emanate from Frankfurt toward user location.
+
+─── ANIMATIONS & EFFECTS ─────────────────────────────────────
+1. Page load: staggered fade-up (animation-delay per element)
+2. Connect button idle: slow outer ring rotation (20s loop)
+3. Connected state: orbital particle system (CSS @keyframes, 6–8 dots)
+4. Data flow lines: SVG stroke-dashoffset animation on network graph
+5. Metric counters: count-up animation on connect
+6. Glassmorphism cards: subtle shimmer on hover (pseudo-element sweep)
+7. Cursor: custom crosshair cursor with blue dot
+
+─── MONETIZATION UI ELEMENTS ────────────────────────────────
+Top-right corner: plan badge showing "FREE" with "Upgrade → PRO" CTA button.
+PRO modal (triggered by upgrade button):
+  - 3 pricing tiers: Free / Pro ($4.99/mo) / Team ($12/mo)
+  - Feature comparison table
+  - "Most Popular" badge on Pro
+  - Stripe-style card layout
+  - CTA: "Start Free Trial"
+
+─── MICRO-INTERACTIONS ──────────────────────────────────────
+- Sidebar nav items: translate + glow on hover
+- Cards: lift (translateY -2px) + border glow intensify
+- Connect button: scale(0.96) on mousedown, scale(1.04) on mouseup
+- Toggle switches: smooth slide with color transition
+- All transitions: cubic-bezier(0.4, 0, 0.2, 1), 200–300ms
+
+─── TECHNICAL REQUIREMENTS ──────────────────────────────────
+Single HTML file. Vanilla JS + CSS only (no frameworks).
+Google Fonts via CDN link.
+All SVG inline (no external images).
+Simulated live data: setInterval updates ping, speed, session timer.
+Connect button toggles between states with full visual transition.
+Fully responsive down to 768px (mobile: sidebar becomes bottom tab bar).
+Accessible: ARIA labels, keyboard navigation, focus rings.
