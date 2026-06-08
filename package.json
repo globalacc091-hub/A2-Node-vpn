@@ -1,0 +1,10 @@
+{
+  "name": "a2-node-vpn",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node vpn-core/index.js",
+    "test": "node --test"
+  }
+}
