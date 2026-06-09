@@ -1275,22 +1275,46 @@
 
   // POLL METRICS
   let _dl = 0, _ul = 0;
-  function lerp(a, b, t) { return Math.round(a + (b - a) * t); }
+  let _sessionStart = null;
 
+  // Timer runs locally - no flicker
+  setInterval(() => {
+    if (state !== 'connected' || !_sessionStart) return;
+    const elapsed = Math.floor((Date.now() - _sessionStart) / 1000);
+    const h = String(Math.floor(elapsed / 3600)).padStart(2,'0');
+    const m = String(Math.floor((elapsed % 3600) / 60)).padStart(2,'0');
+    const s = String(elapsed % 60).padStart(2,'0');
+    document.getElementById('session-time').textContent = h+':'+m+':'+s;
+  }, 1000);
+
+  // Metrics update slowly - every 3 seconds
   setInterval(async () => {
     try {
       if (state !== 'connected') return;
       const data = await api('GET', '/api/metrics');
-      _dl = lerp(_dl, data.download || 0, 0.2);
-      _ul = lerp(_ul, data.upload || 0, 0.2);
-      document.getElementById('dl-speed').textContent = _dl;
-      document.getElementById('ul-speed').textContent = _ul;
+      const targetDl = data.download || 0;
+      const targetUl = data.upload || 0;
+      // Animate smoothly over 20 steps
+      const steps = 20;
+      const dlStep = (targetDl - _dl) / steps;
+      const ulStep = (targetUl - _ul) / steps;
+      let i = 0;
+      const anim = setInterval(() => {
+        _dl += dlStep;
+        _ul += ulStep;
+        document.getElementById('dl-speed').textContent = Math.round(_dl);
+        document.getElementById('ul-speed').textContent = Math.round(_ul);
+        if (++i >= steps) {
+          _dl = targetDl;
+          _ul = targetUl;
+          clearInterval(anim);
+        }
+      }, 150);
       document.getElementById('data-used').textContent = data.dataUsed || '0.00';
-      document.getElementById('session-time').textContent = data.sessionTime || '00:00:00';
       topPing.textContent = data.ping || '—';
       serverPing.textContent = data.ping || '—';
     } catch(e) {}
-  }, 1000);
+  }, 3000);
 
   // LOAD PLANS
   async function loadPlans() {
