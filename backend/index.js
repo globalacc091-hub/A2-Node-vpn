@@ -104,7 +104,6 @@ app.post('/api/disconnect', (req, res) => {
   sessionStart = null;
   metrics.download = 0;
   metrics.upload = 0;
-  metrics.dataGB = 0;
   metrics.ping = 0;
   res.json({ connected, status: 'disconnected' });
 });

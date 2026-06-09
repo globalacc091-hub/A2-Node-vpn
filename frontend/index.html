@@ -1287,46 +1287,43 @@
     document.getElementById('session-time').textContent = h+':'+m+':'+s;
   }, 1000);
 
-  // Metrics update every 4 seconds, smooth transition
+  // Local smooth speed simulation
   let _pingVal = '—';
+  let _targetDl = 87, _targetUl = 34;
+
+  // Slowly drift speed locally
+  setInterval(() => {
+    if (state !== 'connected') return;
+    _dl += (_targetDl - _dl) * 0.05;
+    _ul += (_targetUl - _ul) * 0.05;
+    document.getElementById('dl-speed').textContent = Math.round(_dl);
+    document.getElementById('ul-speed').textContent = Math.round(_ul);
+  }, 2000);
+
+  // Sync with API every 8 seconds only
+  let _totalGB = 0;
   setInterval(async () => {
     try {
       if (state !== 'connected') return;
       const data = await api('GET', '/api/metrics');
-      if (!data || !data.download) return;
-
-      // Smooth speed with lerp over 2 seconds
-      const targetDl = Number(data.download) || _dl;
-      const targetUl = Number(data.upload) || _ul;
-      const duration = 2000;
-      const startDl = _dl, startUl = _ul;
-      const startTime = Date.now();
-      cancelAnimationFrame(window._speedAnim);
-      function animSpeed() {
-        const t = Math.min((Date.now() - startTime) / duration, 1);
-        const ease = t < 0.5 ? 2*t*t : -1+(4-2*t)*t;
-        _dl = startDl + (targetDl - startDl) * ease;
-        _ul = startUl + (targetUl - startUl) * ease;
-        document.getElementById('dl-speed').textContent = Math.round(_dl);
-        document.getElementById('ul-speed').textContent = Math.round(_ul);
-        if (t < 1) window._speedAnim = requestAnimationFrame(animSpeed);
-        else { _dl = targetDl; _ul = targetUl; }
-      }
-      window._speedAnim = requestAnimationFrame(animSpeed);
-
-      // GB only goes up, never resets
+      if (!data) return;
+      // Update targets, not values directly
+      _targetDl = Number(data.download) || _targetDl;
+      _targetUl = Number(data.upload) || _targetUl;
+      // GB only goes up
       const newGB = parseFloat(data.dataUsed) || 0;
-      const curGB = parseFloat(document.getElementById('data-used').textContent) || 0;
-      if (newGB > curGB) document.getElementById('data-used').textContent = newGB.toFixed(2);
-
-      // Ping only updates if changed
+      if (newGB > _totalGB) {
+        _totalGB = newGB;
+        document.getElementById('data-used').textContent = _totalGB.toFixed(2);
+      }
+      // Ping
       if (data.ping && data.ping !== _pingVal) {
         _pingVal = data.ping;
         topPing.textContent = _pingVal;
         serverPing.textContent = _pingVal;
       }
     } catch(e) {}
-  }, 4000);
+  }, 8000);
 
   // LOAD PLANS
   async function loadPlans() {
