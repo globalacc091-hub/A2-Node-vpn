@@ -1,11 +1,1285 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta http-equiv="refresh" content="0;url=frontend/index.html">
-  <title>A2 Node</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>A2 Node — Secure. Fast. Invisible.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=IBM+Plex+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg-void: #050709;
+    --bg-panel: #0c0f14;
+    --bg-glass: rgba(255,255,255,0.04);
+    --border: rgba(99,179,237,0.15);
+    --accent-primary: #3B82F6;
+    --accent-glow: #60A5FA;
+    --accent-green: #10B981;
+    --accent-red: #EF4444;
+    --text-primary: #F0F4FF;
+    --text-muted: #4A5568;
+    --text-dim: #2D3748;
+    --sidebar-w: 64px;
+    --sidebar-expanded: 220px;
+  }
+
+  html, body {
+    height: 100%;
+    background: var(--bg-void);
+    color: var(--text-primary);
+    font-family: 'IBM Plex Mono', monospace;
+    cursor: none;
+    overflow: hidden;
+  }
+
+  /* CUSTOM CURSOR */
+  #cursor {
+    position: fixed;
+    width: 8px; height: 8px;
+    background: var(--accent-primary);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 9999;
+    transform: translate(-50%, -50%);
+    transition: transform 0.1s ease, background 0.2s;
+    box-shadow: 0 0 12px var(--accent-glow);
+  }
+  #cursor-ring {
+    position: fixed;
+    width: 28px; height: 28px;
+    border: 1px solid rgba(59,130,246,0.5);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 9998;
+    transform: translate(-50%, -50%);
+    transition: transform 0.15s ease, width 0.2s, height 0.2s;
+  }
+
+  /* LAYOUT */
+  .app {
+    display: flex;
+    height: 100vh;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* SIDEBAR */
+  .sidebar {
+    width: var(--sidebar-w);
+    height: 100%;
+    background: var(--bg-panel);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px 0;
+    transition: width 0.3s cubic-bezier(0.4,0,0.2,1);
+    position: relative;
+    z-index: 100;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .sidebar:hover { width: var(--sidebar-expanded); }
+
+  .sidebar-logo {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    margin-bottom: 32px;
+    gap: 12px;
+    overflow: hidden;
+  }
+  .logo-svg { flex-shrink: 0; }
+  .logo-text {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 15px;
+    white-space: nowrap;
+    color: var(--text-primary);
+    opacity: 0;
+    transition: opacity 0.2s;
+    letter-spacing: 0.05em;
+  }
+  .sidebar:hover .logo-text { opacity: 1; }
+
+  .nav-items {
+    flex: 1;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 20px;
+    cursor: none;
+    border-left: 2px solid transparent;
+    transition: all 0.2s cubic-bezier(0.4,0,0.2,1);
+    position: relative;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+  .nav-item:hover {
+    background: var(--bg-glass);
+    transform: translateX(2px);
+  }
+  .nav-item.active {
+    border-left-color: var(--accent-primary);
+    background: rgba(59,130,246,0.08);
+  }
+  .nav-item.active .nav-icon { color: var(--accent-primary); }
+  .nav-icon { font-size: 18px; flex-shrink: 0; color: var(--text-muted); transition: color 0.2s; }
+  .nav-item:hover .nav-icon { color: var(--accent-glow); }
+  .nav-label {
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    opacity: 0;
+    transition: opacity 0.2s;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+  .sidebar:hover .nav-label { opacity: 1; }
+  .nav-item.active .nav-label { color: var(--accent-glow); }
+
+  .sidebar-user {
+    width: 100%;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-top: 1px solid var(--border);
+    overflow: hidden;
+  }
+  .user-avatar {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #3B82F6, #10B981);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    font-family: 'Syne', sans-serif;
+  }
+  .user-info { opacity: 0; transition: opacity 0.2s; white-space: nowrap; }
+  .sidebar:hover .user-info { opacity: 1; }
+  .user-name { font-size: 11px; color: var(--text-primary); font-weight: 600; }
+  .plan-badge {
+    display: inline-block;
+    font-size: 9px;
+    padding: 2px 6px;
+    background: rgba(59,130,246,0.2);
+    border: 1px solid rgba(59,130,246,0.4);
+    border-radius: 3px;
+    color: var(--accent-glow);
+    letter-spacing: 0.1em;
+    margin-top: 2px;
+  }
+
+  /* MAIN CANVAS */
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* BACKGROUND NETWORK GRAPH */
+  .bg-network {
+    position: absolute;
+    inset: 0;
+    opacity: 0.12;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* EUROPE MAP BG */
+  .bg-map {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.05;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* TOP BAR */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 32px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(5,7,9,0.8);
+    backdrop-filter: blur(20px);
+    position: relative;
+    z-index: 10;
+    animation: fadeUp 0.6s ease forwards;
+  }
+  .topbar-left {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+  .ip-display {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .ip-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent-red);
+    animation: pulse-red 2s infinite;
+  }
+  .ip-dot.connected { background: var(--accent-green); animation: pulse-green 2s infinite; }
+  .ip-value { color: var(--text-primary); letter-spacing: 0.05em; }
+  .location-flag { font-size: 16px; }
+
+  .topbar-stats {
+    display: flex;
+    gap: 24px;
+  }
+  .stat-item { text-align: center; }
+  .stat-label { font-size: 9px; color: var(--text-muted); letter-spacing: 0.1em; text-transform: uppercase; }
+  .stat-value { font-size: 13px; color: var(--text-primary); font-weight: 600; }
+
+  .topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .plan-display {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--bg-glass);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 11px;
+  }
+  .plan-name { color: var(--text-muted); letter-spacing: 0.08em; }
+  .upgrade-btn {
+    background: linear-gradient(135deg, var(--accent-primary), #6366F1);
+    border: none;
+    border-radius: 6px;
+    padding: 6px 14px;
+    color: white;
+    font-size: 11px;
+    font-family: 'IBM Plex Mono', monospace;
+    letter-spacing: 0.05em;
+    cursor: none;
+    transition: all 0.2s cubic-bezier(0.4,0,0.2,1);
+    font-weight: 600;
+  }
+  .upgrade-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 20px rgba(59,130,246,0.4);
+  }
+
+  /* CENTER AREA */
+  .center-area {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    z-index: 5;
+    gap: 48px;
+    padding: 24px;
+  }
+
+  /* CONNECT BUTTON SCENE */
+  .connect-scene {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 32px;
+    animation: fadeUp 0.8s 0.2s ease both;
+  }
+
+  .connect-wrapper {
+    position: relative;
+    width: 240px;
+    height: 240px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Outer ring */
+  .ring-outer {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 1px dashed rgba(239,68,68,0.4);
+    animation: ring-rotate 20s linear infinite;
+  }
+  .ring-outer.connected { border-color: rgba(59,130,246,0.5); }
+
+  .ring-mid {
+    position: absolute;
+    inset: 14px;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.04);
+  }
+
+  /* Particles */
+  .particles {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    opacity: 0;
+    transition: opacity 0.5s;
+  }
+  .particles.visible { opacity: 1; }
+  .particle {
+    position: absolute;
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--accent-glow);
+    top: 50%; left: 50%;
+    box-shadow: 0 0 8px var(--accent-glow);
+  }
+  .particle:nth-child(1) { animation: orbit1 3s linear infinite; }
+  .particle:nth-child(2) { animation: orbit2 3s linear infinite 0.375s; }
+  .particle:nth-child(3) { animation: orbit3 3s linear infinite 0.75s; }
+  .particle:nth-child(4) { animation: orbit4 3s linear infinite 1.125s; }
+  .particle:nth-child(5) { animation: orbit5 3s linear infinite 1.5s; }
+  .particle:nth-child(6) { animation: orbit6 3s linear infinite 1.875s; }
+
+  @keyframes orbit1 { from { transform: translate(-50%,-50%) rotate(0deg) translateX(110px); } to { transform: translate(-50%,-50%) rotate(360deg) translateX(110px); } }
+  @keyframes orbit2 { from { transform: translate(-50%,-50%) rotate(60deg) translateX(110px); } to { transform: translate(-50%,-50%) rotate(420deg) translateX(110px); } }
+  @keyframes orbit3 { from { transform: translate(-50%,-50%) rotate(120deg) translateX(110px); } to { transform: translate(-50%,-50%) rotate(480deg) translateX(110px); } }
+  @keyframes orbit4 { from { transform: translate(-50%,-50%) rotate(180deg) translateX(110px); } to { transform: translate(-50%,-50%) rotate(540deg) translateX(110px); } }
+  @keyframes orbit5 { from { transform: translate(-50%,-50%) rotate(240deg) translateX(110px); } to { transform: translate(-50%,-50%) rotate(600deg) translateX(110px); } }
+  @keyframes orbit6 { from { transform: translate(-50%,-50%) rotate(300deg) translateX(110px); } to { transform: translate(-50%,-50%) rotate(660deg) translateX(110px); } }
+
+  /* Main connect button */
+  .connect-btn {
+    width: 180px; height: 180px;
+    border-radius: 50%;
+    border: none;
+    background: radial-gradient(circle at 40% 35%, rgba(239,68,68,0.15), rgba(5,7,9,0.95));
+    box-shadow:
+      0 0 0 1px rgba(239,68,68,0.3),
+      0 0 30px rgba(239,68,68,0.15),
+      inset 0 0 40px rgba(0,0,0,0.5);
+    cursor: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+    position: relative;
+    z-index: 2;
+  }
+  .connect-btn:active { transform: scale(0.96); }
+  .connect-btn.connecting {
+    box-shadow:
+      0 0 0 1px rgba(59,130,246,0.5),
+      0 0 60px rgba(59,130,246,0.25),
+      inset 0 0 40px rgba(0,0,0,0.5);
+    animation: btn-pulse 1s ease infinite;
+  }
+  .connect-btn.connected {
+    background: radial-gradient(circle at 40% 35%, rgba(16,185,129,0.2), rgba(5,7,9,0.95));
+    box-shadow:
+      0 0 0 1px rgba(16,185,129,0.4),
+      0 0 50px rgba(16,185,129,0.2),
+      0 0 80px rgba(59,130,246,0.1),
+      inset 0 0 40px rgba(0,0,0,0.5);
+  }
+
+  .btn-icon {
+    width: 36px; height: 36px;
+    color: var(--accent-red);
+    transition: color 0.3s;
+  }
+  .btn-icon.connected { color: var(--accent-green); }
+
+  .btn-label {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 0.2em;
+    color: var(--text-primary);
+  }
+  .btn-sublabel {
+    font-size: 9px;
+    color: var(--text-muted);
+    letter-spacing: 0.15em;
+  }
+
+  /* SECURITY BADGES */
+  .security-strip {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .sec-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--bg-glass);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 5px 12px;
+    font-size: 10px;
+    color: var(--text-muted);
+    transition: all 0.2s;
+    position: relative;
+  }
+  .sec-badge:hover {
+    border-color: rgba(59,130,246,0.3);
+    color: var(--text-primary);
+  }
+  .sec-dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--accent-green);
+    box-shadow: 0 0 6px var(--accent-green);
+  }
+  .sec-tooltip {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1a2030;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 10px;
+    white-space: nowrap;
+    color: var(--text-primary);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+  }
+  .sec-badge:hover .sec-tooltip { opacity: 1; }
+
+  /* SERVER PANEL */
+  .server-panel {
+    width: 260px;
+    background: var(--bg-glass);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    backdrop-filter: blur(12px);
+    animation: fadeUp 0.8s 0.4s ease both;
+    flex-shrink: 0;
+  }
+  .server-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  .server-title { font-family: 'Syne', sans-serif; font-size: 11px; color: var(--text-muted); letter-spacing: 0.15em; text-transform: uppercase; }
+  .premium-badge {
+    font-size: 9px;
+    padding: 3px 8px;
+    background: linear-gradient(135deg, rgba(251,191,36,0.2), rgba(245,158,11,0.1));
+    border: 1px solid rgba(251,191,36,0.3);
+    border-radius: 4px;
+    color: #F59E0B;
+    letter-spacing: 0.1em;
+  }
+  .server-location {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .server-flag { font-size: 28px; }
+  .server-name { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; }
+  .server-city { font-size: 11px; color: var(--text-muted); }
+
+  .server-stats { display: flex; flex-direction: column; gap: 14px; }
+  .server-stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+  }
+  .server-stat-key { color: var(--text-muted); }
+  .server-stat-val { color: var(--text-primary); font-weight: 600; }
+  .server-stat-val.green { color: var(--accent-green); }
+
+  .load-bar-wrap {
+    width: 80px;
+    height: 4px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .load-bar-fill {
+    height: 100%;
+    width: 34%;
+    background: linear-gradient(90deg, var(--accent-primary), var(--accent-green));
+    border-radius: 2px;
+    position: relative;
+    overflow: hidden;
+  }
+  .load-bar-fill::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    animation: shimmer 2s infinite;
+  }
+
+  .protocol-pill {
+    background: rgba(59,130,246,0.1);
+    border: 1px solid rgba(59,130,246,0.2);
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: 10px;
+    color: var(--accent-glow);
+    letter-spacing: 0.05em;
+  }
+
+  /* BOTTOM METRIC CARDS */
+  .bottom-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    padding: 0 24px 24px;
+    position: relative;
+    z-index: 5;
+    animation: fadeUp 0.8s 0.6s ease both;
+  }
+
+  .metric-card {
+    background: var(--bg-glass);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 20px;
+    backdrop-filter: blur(12px);
+    transition: all 0.2s cubic-bezier(0.4,0,0.2,1);
+    position: relative;
+    overflow: hidden;
+    cursor: none;
+  }
+  .metric-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(59,130,246,0.3);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+  }
+  .metric-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%;
+    width: 100%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.03), transparent);
+    transition: left 0.5s;
+  }
+  .metric-card:hover::before { left: 100%; }
+
+  .metric-label { font-size: 9px; color: var(--text-muted); letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 8px; }
+  .metric-value {
+    font-family: 'Syne', sans-serif;
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--text-primary);
+    letter-spacing: -0.02em;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+  .metric-unit { font-size: 11px; color: var(--text-muted); margin-left: 4px; font-family: 'IBM Plex Mono', monospace; font-weight: 400; }
+  .metric-sub {
+    font-size: 10px;
+    color: var(--accent-green);
+    margin-top: 6px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .metric-sub.inactive { color: var(--text-muted); }
+
+  /* ANIMATIONS */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes ring-rotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+  @keyframes btn-pulse {
+    0%, 100% { box-shadow: 0 0 0 1px rgba(59,130,246,0.5), 0 0 40px rgba(59,130,246,0.2), inset 0 0 40px rgba(0,0,0,0.5); }
+    50% { box-shadow: 0 0 0 1px rgba(59,130,246,0.8), 0 0 80px rgba(59,130,246,0.4), inset 0 0 40px rgba(0,0,0,0.5); }
+  }
+  @keyframes pulse-red {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.4); }
+    50% { box-shadow: 0 0 0 4px rgba(239,68,68,0); }
+  }
+  @keyframes pulse-green {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(16,185,129,0.4); }
+    50% { box-shadow: 0 0 0 4px rgba(16,185,129,0); }
+  }
+  @keyframes shimmer {
+    from { transform: translateX(-100%); }
+    to { transform: translateX(200%); }
+  }
+  @keyframes node-flicker {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+  }
+  @keyframes edge-flow {
+    from { stroke-dashoffset: 100; }
+    to { stroke-dashoffset: 0; }
+  }
+  @keyframes germany-pulse {
+    0%, 100% { filter: drop-shadow(0 0 4px rgba(59,130,246,0.3)); }
+    50% { filter: drop-shadow(0 0 16px rgba(59,130,246,0.8)); }
+  }
+
+  /* MODAL */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.8);
+    backdrop-filter: blur(8px);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+  .modal {
+    background: #0d1117;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 40px;
+    max-width: 700px;
+    width: 90%;
+    transform: translateY(20px);
+    transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+  }
+  .modal-overlay.open .modal { transform: translateY(0); }
+  .modal-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 24px;
+    font-weight: 800;
+    text-align: center;
+    margin-bottom: 8px;
+  }
+  .modal-sub { text-align: center; color: var(--text-muted); font-size: 12px; margin-bottom: 32px; }
+  .pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .pricing-card {
+    background: var(--bg-glass);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    position: relative;
+    transition: all 0.2s;
+    cursor: none;
+  }
+  .pricing-card:hover { border-color: rgba(59,130,246,0.4); transform: translateY(-2px); }
+  .pricing-card.popular {
+    border-color: rgba(59,130,246,0.5);
+    background: rgba(59,130,246,0.05);
+  }
+  .popular-badge {
+    position: absolute;
+    top: -12px; left: 50%;
+    transform: translateX(-50%);
+    background: var(--accent-primary);
+    border-radius: 10px;
+    padding: 3px 12px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    white-space: nowrap;
+  }
+  .pricing-tier { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+  .pricing-price { font-family: 'Syne', sans-serif; font-size: 32px; font-weight: 800; margin: 12px 0; }
+  .pricing-price span { font-size: 13px; font-weight: 400; color: var(--text-muted); }
+  .pricing-features { list-style: none; margin: 16px 0; display: flex; flex-direction: column; gap: 8px; }
+  .pricing-features li { font-size: 11px; color: var(--text-muted); display: flex; gap: 8px; align-items: flex-start; }
+  .pricing-features li::before { content: '✓'; color: var(--accent-green); flex-shrink: 0; }
+  .pricing-cta {
+    width: 100%;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg-glass);
+    color: var(--text-primary);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    cursor: none;
+    transition: all 0.2s;
+    font-weight: 600;
+  }
+  .pricing-cta:hover { border-color: var(--accent-primary); background: rgba(59,130,246,0.1); }
+  .pricing-card.popular .pricing-cta {
+    background: var(--accent-primary);
+    border-color: var(--accent-primary);
+  }
+  .pricing-card.popular .pricing-cta:hover { background: var(--accent-glow); }
+  .modal-close {
+    display: block;
+    margin: 24px auto 0;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    cursor: none;
+    letter-spacing: 0.1em;
+    transition: color 0.2s;
+  }
+  .modal-close:hover { color: var(--text-primary); }
+
+  /* RESPONSIVE */
+  @media (max-width: 900px) {
+    .sidebar { display: none; }
+    .bottom-grid { grid-template-columns: repeat(2, 1fr); }
+    .server-panel { display: none; }
+    .center-area { flex-direction: column; }
+  }
+  @media (max-width: 600px) {
+    .bottom-grid { grid-template-columns: 1fr 1fr; }
+    .topbar-stats { display: none; }
+    .security-strip { gap: 6px; }
+    .sec-badge { font-size: 9px; padding: 4px 8px; }
+  }
+</style>
 </head>
 <body>
-  <p>Redirecting to <a href="frontend/index.html">frontend/index.html</a>...</p>
+
+<div id="cursor"></div>
+<div id="cursor-ring"></div>
+
+<div class="app">
+  <!-- SIDEBAR -->
+  <nav class="sidebar" aria-label="Main navigation">
+    <div class="sidebar-logo">
+      <!-- A2 Node Logo SVG -->
+      <svg class="logo-svg" width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="A2 Node logo">
+        <rect width="32" height="32" rx="8" fill="rgba(59,130,246,0.15)"/>
+        <text x="4" y="22" font-family="Syne, sans-serif" font-weight="800" font-size="16" fill="#3B82F6">A2</text>
+        <circle cx="26" cy="10" r="2.5" fill="#60A5FA"/>
+        <circle cx="22" cy="20" r="1.5" fill="#10B981"/>
+        <line x1="26" y1="10" x2="22" y2="20" stroke="rgba(96,165,250,0.5)" stroke-width="0.8"/>
+        <circle cx="28" cy="22" r="1.5" fill="#60A5FA" opacity="0.6"/>
+        <line x1="22" y1="20" x2="28" y2="22" stroke="rgba(96,165,250,0.3)" stroke-width="0.8"/>
+      </svg>
+      <span class="logo-text">A2 NODE</span>
+    </div>
+
+    <div class="nav-items">
+      <div class="nav-item active" tabindex="0" role="button" aria-label="Dashboard">
+        <span class="nav-icon">⬡</span>
+        <span class="nav-label">DASHBOARD</span>
+      </div>
+      <div class="nav-item" tabindex="0" role="button" aria-label="Servers">
+        <span class="nav-icon">◈</span>
+        <span class="nav-label">SERVERS</span>
+      </div>
+      <div class="nav-item" tabindex="0" role="button" aria-label="Statistics">
+        <span class="nav-icon">◎</span>
+        <span class="nav-label">STATISTICS</span>
+      </div>
+      <div class="nav-item" tabindex="0" role="button" aria-label="Settings">
+        <span class="nav-icon">◉</span>
+        <span class="nav-label">SETTINGS</span>
+      </div>
+      <div class="nav-item" tabindex="0" role="button" aria-label="Support">
+        <span class="nav-icon">◌</span>
+        <span class="nav-label">SUPPORT</span>
+      </div>
+    </div>
+
+    <div class="sidebar-user">
+      <div class="user-avatar">U</div>
+      <div class="user-info">
+        <div class="user-name">user@a2node</div>
+        <div class="plan-badge">FREE</div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- MAIN CANVAS -->
+  <main class="main">
+
+    <!-- Background network graph -->
+    <svg class="bg-network" viewBox="0 0 800 600" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <g fill="none">
+        <!-- Edges -->
+        <line x1="100" y1="100" x2="300" y2="200" stroke="rgba(59,130,246,0.4)" stroke-width="0.8" stroke-dasharray="6 4" style="animation: edge-flow 3s linear infinite;"/>
+        <line x1="300" y1="200" x2="500" y2="150" stroke="rgba(59,130,246,0.4)" stroke-width="0.8" stroke-dasharray="6 4" style="animation: edge-flow 3s 0.5s linear infinite;"/>
+        <line x1="500" y1="150" x2="700" y2="250" stroke="rgba(59,130,246,0.3)" stroke-width="0.8" stroke-dasharray="6 4" style="animation: edge-flow 3s 1s linear infinite;"/>
+        <line x1="300" y1="200" x2="200" y2="400" stroke="rgba(59,130,246,0.3)" stroke-width="0.8" stroke-dasharray="6 4" style="animation: edge-flow 3s 0.7s linear infinite;"/>
+        <line x1="200" y1="400" x2="500" y2="450" stroke="rgba(59,130,246,0.2)" stroke-width="0.8" stroke-dasharray="6 4" style="animation: edge-flow 3s 1.2s linear infinite;"/>
+        <line x1="500" y1="450" x2="700" y2="350" stroke="rgba(59,130,246,0.2)" stroke-width="0.8" stroke-dasharray="6 4" style="animation: edge-flow 3s 0.3s linear infinite;"/>
+        <line x1="700" y1="250" x2="700" y2="350" stroke="rgba(59,130,246,0.2)" stroke-width="0.8" stroke-dasharray="6 4" style="animation: edge-flow 3s 0.9s linear infinite;"/>
+        <line x1="100" y1="300" x2="200" y2="400" stroke="rgba(59,130,246,0.2)" stroke-width="0.8" stroke-dasharray="6 4" style="animation: edge-flow 3s 1.5s linear infinite;"/>
+        <line x1="100" y1="100" x2="100" y2="300" stroke="rgba(59,130,246,0.15)" stroke-width="0.8" stroke-dasharray="6 4" style="animation: edge-flow 3s 0.4s linear infinite;"/>
+        <line x1="400" y1="50" x2="500" y2="150" stroke="rgba(59,130,246,0.15)" stroke-width="0.8" stroke-dasharray="6 4" style="animation: edge-flow 3s 1.8s linear infinite;"/>
+        <!-- Nodes -->
+        <circle cx="100" cy="100" r="4" fill="#3B82F6" style="animation: node-flicker 2s infinite;"/>
+        <circle cx="300" cy="200" r="5" fill="#60A5FA" style="animation: node-flicker 2s 0.3s infinite;"/>
+        <circle cx="500" cy="150" r="4" fill="#3B82F6" style="animation: node-flicker 2s 0.6s infinite;"/>
+        <circle cx="700" cy="250" r="3" fill="#60A5FA" style="animation: node-flicker 2s 0.9s infinite;"/>
+        <circle cx="200" cy="400" r="4" fill="#3B82F6" style="animation: node-flicker 2s 1.2s infinite;"/>
+        <circle cx="500" cy="450" r="3" fill="#60A5FA" style="animation: node-flicker 2s 1.5s infinite;"/>
+        <circle cx="700" cy="350" r="4" fill="#3B82F6" style="animation: node-flicker 2s 1.8s infinite;"/>
+        <circle cx="100" cy="300" r="3" fill="#10B981" style="animation: node-flicker 2s 0.5s infinite;"/>
+        <circle cx="400" cy="50" r="3" fill="#60A5FA" style="animation: node-flicker 2s 2s infinite;"/>
+      </g>
+    </svg>
+
+    <!-- TOP BAR -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <div class="ip-display">
+          <div class="ip-dot" id="ip-dot"></div>
+          <span>IP:</span>
+          <span class="ip-value" id="ip-display">███.██.██.███</span>
+          <span class="location-flag" id="location-flag">🌐</span>
+        </div>
+        <div class="ip-display" style="font-size:10px; color: var(--text-dim);">
+          <span>STATUS:</span>
+          <span id="status-text" style="color: var(--accent-red); margin-left: 4px; letter-spacing: 0.1em;">DISCONNECTED</span>
+        </div>
+      </div>
+
+      <div class="topbar-stats">
+        <div class="stat-item">
+          <div class="stat-label">LATENCY</div>
+          <div class="stat-value" id="top-ping">—</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">PROTOCOL</div>
+          <div class="stat-value">WG</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">UPTIME</div>
+          <div class="stat-value">99.97%</div>
+        </div>
+      </div>
+
+      <div class="topbar-right">
+        <div class="plan-display">
+          <span class="plan-name">FREE PLAN</span>
+        </div>
+        <button class="upgrade-btn" id="upgrade-btn" aria-label="Upgrade to PRO">Upgrade → PRO</button>
+      </div>
+    </header>
+
+    <!-- CENTER AREA -->
+    <div class="center-area">
+
+      <!-- CONNECT SCENE -->
+      <div class="connect-scene">
+        <div class="connect-wrapper">
+          <div class="ring-outer" id="ring-outer"></div>
+          <div class="ring-mid"></div>
+
+          <!-- Particles -->
+          <div class="particles" id="particles">
+            <div class="particle"></div>
+            <div class="particle"></div>
+            <div class="particle"></div>
+            <div class="particle"></div>
+            <div class="particle"></div>
+            <div class="particle"></div>
+          </div>
+
+          <button class="connect-btn" id="connect-btn" aria-label="Connect to VPN" aria-pressed="false">
+            <!-- Power icon SVG -->
+            <svg class="btn-icon" id="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+              <path d="M12 2v6M19.07 4.93A10 10 0 1 1 4.93 4.93"/>
+            </svg>
+            <span class="btn-label" id="btn-label">CONNECT</span>
+            <span class="btn-sublabel" id="btn-sublabel">TAP TO SECURE</span>
+          </button>
+        </div>
+
+        <!-- SECURITY BADGES -->
+        <div class="security-strip" role="list">
+          <div class="sec-badge" role="listitem">
+            <div class="sec-dot"></div>
+            🔒 AES-256
+            <div class="sec-tooltip">AES-256 Encryption — ACTIVE</div>
+          </div>
+          <div class="sec-badge" role="listitem">
+            <div class="sec-dot"></div>
+            🛡 IP LEAK PROTECT
+            <div class="sec-tooltip">IP Leak Protection — ON</div>
+          </div>
+          <div class="sec-badge" role="listitem">
+            <div class="sec-dot"></div>
+            👁 NO-LOG
+            <div class="sec-tooltip">No-Log Policy — VERIFIED</div>
+          </div>
+          <div class="sec-badge" role="listitem">
+            <div class="sec-dot"></div>
+            ⚡ KILL SWITCH
+            <div class="sec-tooltip">Kill Switch — ARMED</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SERVER PANEL -->
+      <div class="server-panel" aria-label="Server information">
+        <div class="server-header">
+          <div class="server-title">ACTIVE SERVER</div>
+          <div class="premium-badge">PREMIUM</div>
+        </div>
+        <div class="server-location">
+          <div class="server-flag">🇩🇪</div>
+          <div>
+            <div class="server-name">Germany</div>
+            <div class="server-city">Frankfurt — EU-WEST</div>
+          </div>
+        </div>
+        <div class="server-stats">
+          <div class="server-stat-row">
+            <span class="server-stat-key">PING</span>
+            <span class="server-stat-val green" id="server-ping">24ms</span>
+          </div>
+          <div class="server-stat-row">
+            <span class="server-stat-key">LOAD</span>
+            <div>
+              <div style="font-size:10px; color: var(--text-muted); margin-bottom: 4px; text-align:right;">34%</div>
+              <div class="load-bar-wrap"><div class="load-bar-fill"></div></div>
+            </div>
+          </div>
+          <div class="server-stat-row">
+            <span class="server-stat-key">PROTOCOL</span>
+            <span class="protocol-pill">WireGuard</span>
+          </div>
+          <div class="server-stat-row">
+            <span class="server-stat-key">UPTIME</span>
+            <span class="server-stat-val">99.97%</span>
+          </div>
+          <div class="server-stat-row">
+            <span class="server-stat-key">IPv6 LEAK</span>
+            <span class="server-stat-val green">BLOCKED</span>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /center-area -->
+
+    <!-- BOTTOM METRIC CARDS -->
+    <div class="bottom-grid" role="region" aria-label="Connection metrics">
+      <div class="metric-card">
+        <div class="metric-label">↓ DOWNLOAD SPEED</div>
+        <div>
+          <span class="metric-value" id="dl-speed">0</span>
+          <span class="metric-unit">MB/s</span>
+        </div>
+        <div class="metric-sub inactive" id="dl-sub">— IDLE</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">↑ UPLOAD SPEED</div>
+        <div>
+          <span class="metric-value" id="ul-speed">0</span>
+          <span class="metric-unit">MB/s</span>
+        </div>
+        <div class="metric-sub inactive" id="ul-sub">— IDLE</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">◈ DATA TRANSFERRED</div>
+        <div>
+          <span class="metric-value" id="data-used">0.00</span>
+          <span class="metric-unit">GB</span>
+        </div>
+        <div class="metric-sub inactive" id="data-sub">— SESSION</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">◎ SESSION TIME</div>
+        <div>
+          <span class="metric-value" id="session-time" style="font-size:22px;">00:00:00</span>
+        </div>
+        <div class="metric-sub inactive" id="time-sub">— ELAPSED</div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- PRO MODAL -->
+<div class="modal-overlay" id="modal" role="dialog" aria-modal="true" aria-label="Upgrade to PRO">
+  <div class="modal">
+    <div class="modal-title">Upgrade Your Shield</div>
+    <div class="modal-sub">Unlock the full power of A2 Node — faster servers, unlimited bandwidth, team features.</div>
+    <div class="pricing-grid">
+
+      <div class="pricing-card">
+        <div class="pricing-tier">FREE</div>
+        <div class="pricing-price">$0 <span>/mo</span></div>
+        <ul class="pricing-features">
+          <li>1 server location</li>
+          <li>5 GB / month</li>
+          <li>WireGuard protocol</li>
+          <li>Basic support</li>
+        </ul>
+        <button class="pricing-cta">Current Plan</button>
+      </div>
+
+      <div class="pricing-card popular">
+        <div class="popular-badge">MOST POPULAR</div>
+        <div class="pricing-tier">PRO</div>
+        <div class="pricing-price">$4.99 <span>/mo</span></div>
+        <ul class="pricing-features">
+          <li>50+ server locations</li>
+          <li>Unlimited bandwidth</li>
+          <li>All protocols</li>
+          <li>Kill switch + IP leak guard</li>
+          <li>Priority support 24/7</li>
+        </ul>
+        <button class="pricing-cta">Start Free Trial</button>
+      </div>
+
+      <div class="pricing-card">
+        <div class="pricing-tier">TEAM</div>
+        <div class="pricing-price">$12 <span>/mo</span></div>
+        <ul class="pricing-features">
+          <li>Everything in Pro</li>
+          <li>Up to 10 team members</li>
+          <li>Dedicated nodes</li>
+          <li>Admin dashboard</li>
+          <li>SLA guarantee</li>
+        </ul>
+        <button class="pricing-cta">Contact Sales</button>
+      </div>
+
+    </div>
+    <button class="modal-close" id="modal-close">[ ESC ] CLOSE</button>
+  </div>
+</div>
+
+<script>
+  // CURSOR
+  const cursor = document.getElementById('cursor');
+  const cursorRing = document.getElementById('cursor-ring');
+  document.addEventListener('mousemove', e => {
+    cursor.style.left = e.clientX + 'px';
+    cursor.style.top = e.clientY + 'px';
+    setTimeout(() => {
+      cursorRing.style.left = e.clientX + 'px';
+      cursorRing.style.top = e.clientY + 'px';
+    }, 60);
+  });
+  document.addEventListener('mousedown', () => {
+    cursor.style.transform = 'translate(-50%,-50%) scale(1.5)';
+    cursorRing.style.transform = 'translate(-50%,-50%) scale(0.8)';
+  });
+  document.addEventListener('mouseup', () => {
+    cursor.style.transform = 'translate(-50%,-50%) scale(1)';
+    cursorRing.style.transform = 'translate(-50%,-50%) scale(1)';
+  });
+
+  // STATE
+  let state = 'disconnected'; // disconnected | connecting | connected
+  let sessionStart = null;
+  let sessionInterval = null;
+  let metricsInterval = null;
+  let pingInterval = null;
+
+  const connectBtn = document.getElementById('connect-btn');
+  const btnLabel = document.getElementById('btn-label');
+  const btnSublabel = document.getElementById('btn-sublabel');
+  const btnIcon = document.getElementById('btn-icon');
+  const ringOuter = document.getElementById('ring-outer');
+  const particles = document.getElementById('particles');
+  const ipDisplay = document.getElementById('ip-display');
+  const ipDot = document.getElementById('ip-dot');
+  const locationFlag = document.getElementById('location-flag');
+  const statusText = document.getElementById('status-text');
+  const topPing = document.getElementById('top-ping');
+  const serverPing = document.getElementById('server-ping');
+
+  function setConnecting() {
+    state = 'connecting';
+    connectBtn.classList.add('connecting');
+    btnLabel.textContent = 'CONNECTING';
+    btnSublabel.textContent = 'SECURING TUNNEL...';
+    connectBtn.setAttribute('aria-pressed', 'false');
+    setTimeout(setConnected, 2200);
+  }
+
+  function setConnected() {
+    state = 'connected';
+    connectBtn.classList.remove('connecting');
+    connectBtn.classList.add('connected');
+    btnIcon.classList.add('connected');
+    ringOuter.classList.add('connected');
+    particles.classList.add('visible');
+    btnLabel.textContent = 'CONNECTED';
+    btnSublabel.textContent = 'TUNNEL ACTIVE';
+    connectBtn.setAttribute('aria-pressed', 'true');
+
+    // IP reveal
+    ipDisplay.textContent = '185.220.101.47';
+    ipDot.classList.add('connected');
+    locationFlag.textContent = '🇩🇪';
+    statusText.textContent = 'CONNECTED';
+    statusText.style.color = 'var(--accent-green)';
+    topPing.textContent = '24ms';
+
+    // Start metrics
+    sessionStart = Date.now();
+    sessionInterval = setInterval(updateTimer, 1000);
+    metricsInterval = setInterval(updateMetrics, 800);
+    pingInterval = setInterval(updatePing, 3000);
+
+    // Activate metric cards
+    document.getElementById('dl-sub').classList.remove('inactive');
+    document.getElementById('ul-sub').classList.remove('inactive');
+    document.getElementById('data-sub').classList.remove('inactive');
+    document.getElementById('time-sub').classList.remove('inactive');
+    document.getElementById('dl-sub').textContent = '▲ ACTIVE';
+    document.getElementById('ul-sub').textContent = '▲ ACTIVE';
+    document.getElementById('data-sub').textContent = '▲ SESSION';
+    document.getElementById('time-sub').textContent = '▲ ELAPSED';
+
+    countUp('dl-speed', 0, 87, 1500);
+    countUp('ul-speed', 0, 34, 1500);
+  }
+
+  function setDisconnected() {
+    state = 'disconnected';
+    connectBtn.classList.remove('connected', 'connecting');
+    btnIcon.classList.remove('connected');
+    ringOuter.classList.remove('connected');
+    particles.classList.remove('visible');
+    btnLabel.textContent = 'CONNECT';
+    btnSublabel.textContent = 'TAP TO SECURE';
+    connectBtn.setAttribute('aria-pressed', 'false');
+
+    ipDisplay.textContent = '███.██.██.███';
+    ipDot.classList.remove('connected');
+    locationFlag.textContent = '🌐';
+    statusText.textContent = 'DISCONNECTED';
+    statusText.style.color = 'var(--accent-red)';
+    topPing.textContent = '—';
+    serverPing.textContent = '—ms';
+
+    clearInterval(sessionInterval);
+    clearInterval(metricsInterval);
+    clearInterval(pingInterval);
+    sessionStart = null;
+
+    document.getElementById('dl-speed').textContent = '0';
+    document.getElementById('ul-speed').textContent = '0';
+    document.getElementById('data-used').textContent = '0.00';
+    document.getElementById('session-time').textContent = '00:00:00';
+
+    document.getElementById('dl-sub').classList.add('inactive');
+    document.getElementById('ul-sub').classList.add('inactive');
+    document.getElementById('data-sub').classList.add('inactive');
+    document.getElementById('time-sub').classList.add('inactive');
+    document.getElementById('dl-sub').textContent = '— IDLE';
+    document.getElementById('ul-sub').textContent = '— IDLE';
+    document.getElementById('data-sub').textContent = '— SESSION';
+    document.getElementById('time-sub').textContent = '— ELAPSED';
+  }
+
+  connectBtn.addEventListener('click', () => {
+    if (state === 'disconnected') setConnecting();
+    else if (state === 'connected') setDisconnected();
+  });
+
+  connectBtn.addEventListener('mousedown', () => { connectBtn.style.transform = 'scale(0.96)'; });
+  connectBtn.addEventListener('mouseup', () => {
+    connectBtn.style.transform = 'scale(1.04)';
+    setTimeout(() => { connectBtn.style.transform = ''; }, 200);
+  });
+
+  // TIMER
+  function updateTimer() {
+    if (!sessionStart) return;
+    const elapsed = Math.floor((Date.now() - sessionStart) / 1000);
+    const h = Math.floor(elapsed / 3600).toString().padStart(2,'0');
+    const m = Math.floor((elapsed % 3600) / 60).toString().padStart(2,'0');
+    const s = (elapsed % 60).toString().padStart(2,'0');
+    document.getElementById('session-time').textContent = `${h}:${m}:${s}`;
+
+    // Accumulate data
+    const gb = (elapsed * (87 + 34) / 8 / 1024 / 1024 / 1024).toFixed(4);
+    document.getElementById('data-used').textContent = parseFloat(gb).toFixed(2);
+  }
+
+  // LIVE METRICS
+  function updateMetrics() {
+    const dl = (80 + Math.random() * 20).toFixed(0);
+    const ul = (28 + Math.random() * 12).toFixed(0);
+    document.getElementById('dl-speed').textContent = dl;
+    document.getElementById('ul-speed').textContent = ul;
+  }
+
+  function updatePing() {
+    const ping = Math.floor(20 + Math.random() * 12);
+    serverPing.textContent = ping + 'ms';
+    topPing.textContent = ping + 'ms';
+  }
+
+  // COUNT UP ANIMATION
+  function countUp(id, from, to, duration) {
+    const el = document.getElementById(id);
+    const start = performance.now();
+    function step(now) {
+      const progress = Math.min((now - start) / duration, 1);
+      const ease = 1 - Math.pow(1 - progress, 3);
+      el.textContent = Math.floor(from + (to - from) * ease);
+      if (progress < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+
+  // MODAL
+  const modal = document.getElementById('modal');
+  document.getElementById('upgrade-btn').addEventListener('click', () => {
+    modal.classList.add('open');
+  });
+  document.getElementById('modal-close').addEventListener('click', () => {
+    modal.classList.remove('open');
+  });
+  modal.addEventListener('click', e => {
+    if (e.target === modal) modal.classList.remove('open');
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') modal.classList.remove('open');
+  });
+
+  // KEYBOARD NAVIGATION
+  document.querySelectorAll('.nav-item').forEach(item => {
+    item.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+        item.classList.add('active');
+      }
+    });
+    item.addEventListener('click', () => {
+      document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+      item.classList.add('active');
+    });
+  });
+</script>
 </body>
 </html>
