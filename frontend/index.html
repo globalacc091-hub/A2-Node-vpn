@@ -1287,34 +1287,46 @@
     document.getElementById('session-time').textContent = h+':'+m+':'+s;
   }, 1000);
 
-  // Metrics update slowly - every 3 seconds
+  // Metrics update every 4 seconds, smooth transition
+  let _pingVal = '—';
   setInterval(async () => {
     try {
       if (state !== 'connected') return;
       const data = await api('GET', '/api/metrics');
-      const targetDl = data.download || 0;
-      const targetUl = data.upload || 0;
-      // Animate smoothly over 20 steps
-      const steps = 20;
-      const dlStep = (targetDl - _dl) / steps;
-      const ulStep = (targetUl - _ul) / steps;
-      let i = 0;
-      const anim = setInterval(() => {
-        _dl += dlStep;
-        _ul += ulStep;
+      if (!data || !data.download) return;
+
+      // Smooth speed with lerp over 2 seconds
+      const targetDl = Number(data.download) || _dl;
+      const targetUl = Number(data.upload) || _ul;
+      const duration = 2000;
+      const startDl = _dl, startUl = _ul;
+      const startTime = Date.now();
+      cancelAnimationFrame(window._speedAnim);
+      function animSpeed() {
+        const t = Math.min((Date.now() - startTime) / duration, 1);
+        const ease = t < 0.5 ? 2*t*t : -1+(4-2*t)*t;
+        _dl = startDl + (targetDl - startDl) * ease;
+        _ul = startUl + (targetUl - startUl) * ease;
         document.getElementById('dl-speed').textContent = Math.round(_dl);
         document.getElementById('ul-speed').textContent = Math.round(_ul);
-        if (++i >= steps) {
-          _dl = targetDl;
-          _ul = targetUl;
-          clearInterval(anim);
-        }
-      }, 150);
-      document.getElementById('data-used').textContent = data.dataUsed || '0.00';
-      topPing.textContent = data.ping || '—';
-      serverPing.textContent = data.ping || '—';
+        if (t < 1) window._speedAnim = requestAnimationFrame(animSpeed);
+        else { _dl = targetDl; _ul = targetUl; }
+      }
+      window._speedAnim = requestAnimationFrame(animSpeed);
+
+      // GB only goes up, never resets
+      const newGB = parseFloat(data.dataUsed) || 0;
+      const curGB = parseFloat(document.getElementById('data-used').textContent) || 0;
+      if (newGB > curGB) document.getElementById('data-used').textContent = newGB.toFixed(2);
+
+      // Ping only updates if changed
+      if (data.ping && data.ping !== _pingVal) {
+        _pingVal = data.ping;
+        topPing.textContent = _pingVal;
+        serverPing.textContent = _pingVal;
+      }
     } catch(e) {}
-  }, 3000);
+  }, 4000);
 
   // LOAD PLANS
   async function loadPlans() {
